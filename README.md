@@ -15,6 +15,10 @@ A native macOS menu bar app that sends a hand-drawn airplane trailing a banner a
 
 [Features](#features) · [Usage](#usage) · [Build from source](#build-from-source) · [FAQ](#faq)
 
+<p>
+  <img src="media/demo.gif" alt="Demo" />
+</p>
+
 </div>
 
 ---

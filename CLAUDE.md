@@ -129,3 +129,4 @@ defaults delete app.quiet.QuietReminder
 ## Commit conventions
 
 - Never include `Co-Authored-By: Claude` or any AI authorship trailer in commit messages.
+- Do NOT auto-commit or auto-push after making changes. Wait for explicit user instruction to commit.
