@@ -2,21 +2,17 @@ import Foundation
 
 @MainActor
 final class CalendarPoller {
-    /// How many minutes before a meeting to fire the alert.
-    static let alertMinutesBefore = 5
-    /// Trigger when remaining minutes fall in [alertMinutesBefore - 1, alertMinutesBefore + 1].
-    private static let alertWindowLow  = alertMinutesBefore - 1
-    private static let alertWindowHigh = alertMinutesBefore + 1
-
+    var alertMinutesBefore: Int
     var onMeetingSoon: ((CalendarEvent, Int) -> Void)?
 
     private let service: any CalendarSourceProvider
     private var timer: Timer?
-    // Persists across poll cycles so we don't fire the same alert twice
     private var notifiedIDs: Set<String> = []
+    private var snoozedUntil: [String: Date] = [:]
 
-    init(service: any CalendarSourceProvider) {
+    init(service: any CalendarSourceProvider, alertMinutesBefore: Int) {
         self.service = service
+        self.alertMinutesBefore = alertMinutesBefore
     }
 
     func start() {
@@ -31,6 +27,11 @@ final class CalendarPoller {
         timer = nil
     }
 
+    func snooze(eventID: String, minutes: Int) {
+        notifiedIDs.remove(eventID)
+        snoozedUntil[eventID] = Date().addingTimeInterval(Double(minutes) * 60)
+    }
+
     // MARK: Private
 
     private func poll() {
@@ -38,10 +39,26 @@ final class CalendarPoller {
             guard let events = try? await service.fetchUpcomingEvents() else { return }
 
             let now = Date()
+            let low  = alertMinutesBefore - 1
+            let high = alertMinutesBefore + 1
+
             for event in events {
                 let minutes = Int(event.startDate.timeIntervalSince(now) / 60)
-                guard minutes >= Self.alertWindowLow,
-                      minutes <= Self.alertWindowHigh,
+
+                // Snooze expired — re-alert regardless of lead-time window
+                if let snoozeEnd = snoozedUntil[event.id], now >= snoozeEnd {
+                    snoozedUntil.removeValue(forKey: event.id)
+                    notifiedIDs.insert(event.id)
+                    onMeetingSoon?(event, minutes)
+                    continue
+                }
+
+                // Skip if still snoozed
+                if snoozedUntil[event.id] != nil { continue }
+
+                // Normal lead-time alert
+                guard minutes >= low,
+                      minutes <= high,
                       !notifiedIDs.contains(event.id) else { continue }
 
                 notifiedIDs.insert(event.id)

@@ -2,26 +2,40 @@ import Foundation
 import AppKit
 import Combine
 
-// Central coordinator: owns the Apple Calendar service + poller, and triggers the airplane.
 @MainActor
 final class AppController: ObservableObject {
     @Published var hasAppleAccess: Bool = false
+
     @Published var flightDuration: Double {
         didSet { UserDefaults.standard.set(flightDuration, forKey: "flightDuration") }
     }
+    @Published var alertMinutesBefore: Int {
+        didSet {
+            UserDefaults.standard.set(alertMinutesBefore, forKey: "alertMinutesBefore")
+            poller?.alertMinutesBefore = alertMinutesBefore
+        }
+    }
+    @Published var snoozeMinutes: Int {
+        didSet { UserDefaults.standard.set(snoozeMinutes, forKey: "snoozeMinutes") }
+    }
 
-    /// Preset speeds (seconds for the plane to cross the screen).
     static let slowSpeed:   Double = 22
     static let normalSpeed: Double = 14
     static let fastSpeed:   Double = 8
 
     private let appleService = AppleCalendarService()
     private var poller: CalendarPoller?
-    private var overlayWindows: [AirplaneOverlayWindow] = []
+    private var overlayWindows: [(eventID: String, window: AirplaneOverlayWindow)] = []
 
     init() {
-        let saved = UserDefaults.standard.double(forKey: "flightDuration")
-        self.flightDuration = saved > 0 ? saved : Self.normalSpeed
+        let savedFlight = UserDefaults.standard.double(forKey: "flightDuration")
+        self.flightDuration = savedFlight > 0 ? savedFlight : Self.normalSpeed
+
+        let savedAlert = UserDefaults.standard.integer(forKey: "alertMinutesBefore")
+        self.alertMinutesBefore = savedAlert > 0 ? savedAlert : 5
+
+        let savedSnooze = UserDefaults.standard.integer(forKey: "snoozeMinutes")
+        self.snoozeMinutes = savedSnooze > 0 ? savedSnooze : 5
 
         hasAppleAccess = appleService.hasAccess
         startPollingIfReady()
@@ -39,15 +53,18 @@ final class AppController: ObservableObject {
         }
     }
 
-    /// Manual trigger — shows the airplane immediately with a fake meeting.
     func testAirplane() {
         let fake = CalendarEvent(
             id:        UUID().uuidString,
             title:     "Test Meeting",
-            startDate: Date().addingTimeInterval(300),
-            endDate:   Date().addingTimeInterval(1800)
+            startDate: Date().addingTimeInterval(Double(alertMinutesBefore) * 60),
+            endDate:   Date().addingTimeInterval(Double(alertMinutesBefore) * 60 + 1800)
         )
-        showAirplane(for: fake, minutesUntil: 5)
+        showAirplane(for: fake, minutesUntil: alertMinutesBefore)
+    }
+
+    func snooze(eventID: String) {
+        poller?.snooze(eventID: eventID, minutes: snoozeMinutes)
     }
 
     // MARK: Private
@@ -57,7 +74,7 @@ final class AppController: ObservableObject {
         poller = nil
         guard hasAppleAccess else { return }
 
-        let p = CalendarPoller(service: appleService)
+        let p = CalendarPoller(service: appleService, alertMinutesBefore: alertMinutesBefore)
         p.onMeetingSoon = { [weak self] event, minutes in
             self?.showAirplane(for: event, minutesUntil: minutes)
         }
@@ -67,20 +84,32 @@ final class AppController: ObservableObject {
 
     private func showAirplane(for event: CalendarEvent, minutesUntil: Int) {
         let duration = flightDuration
-        DispatchQueue.main.async {
-            let window = AirplaneOverlayWindow(
-                meetingTitle:   event.title,
-                minutesUntil:   minutesUntil,
-                flightDuration: duration
-            )
-            window.makeKeyAndOrderFront(nil)
-            self.overlayWindows.append(window)
+        let eventID  = event.id
 
-            // Release shortly after the animation finishes (fade-out is 0.6s)
+        DispatchQueue.main.async {
+            for screen in NSScreen.screens {
+                let window = AirplaneOverlayWindow(
+                    screen:         screen,
+                    meetingTitle:   event.title,
+                    minutesUntil:   minutesUntil,
+                    flightDuration: duration,
+                    onSnooze:       { [weak self] in
+                        self?.snooze(eventID: eventID)
+                        self?.closeWindows(for: eventID)
+                    }
+                )
+                window.makeKeyAndOrderFront(nil)
+                self.overlayWindows.append((eventID: eventID, window: window))
+            }
+
             DispatchQueue.main.asyncAfter(deadline: .now() + duration + 1.5) {
-                self.overlayWindows.removeAll { $0 === window }
-                window.close()
+                self.closeWindows(for: eventID)
             }
         }
+    }
+
+    private func closeWindows(for eventID: String) {
+        overlayWindows.filter { $0.eventID == eventID }.forEach { $0.window.close() }
+        overlayWindows.removeAll { $0.eventID == eventID }
     }
 }

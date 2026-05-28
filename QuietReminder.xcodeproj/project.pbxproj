@@ -261,7 +261,7 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_LSUIElement = NO;
+				INFOPLIST_KEY_LSUIElement = YES;
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Quiet Reminder reads upcoming events so it can fly a banner across your screen 5 minutes before each meeting.";
 				INFOPLIST_KEY_NSCalendarsUsageDescription = "Quiet Reminder reads upcoming events so it can fly a banner across your screen 5 minutes before each meeting.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -298,7 +298,7 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_LSUIElement = NO;
+				INFOPLIST_KEY_LSUIElement = YES;
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Quiet Reminder reads upcoming events so it can fly a banner across your screen 5 minutes before each meeting.";
 				INFOPLIST_KEY_NSCalendarsUsageDescription = "Quiet Reminder reads upcoming events so it can fly a banner across your screen 5 minutes before each meeting.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";

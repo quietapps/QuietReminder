@@ -3,8 +3,13 @@ import SwiftUI
 struct MenuBarView: View {
     @EnvironmentObject var controller: AppController
 
+    private let alertOptions  = [2, 5, 10, 15]
+    private let snoozeOptions = [2, 5, 10]
+
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
+
+            // MARK: Calendar status
             if controller.hasAppleAccess {
                 Label("Calendar connected", systemImage: "checkmark.circle.fill")
                     .foregroundStyle(.green)
@@ -20,7 +25,45 @@ struct MenuBarView: View {
 
             Divider()
 
-            // Speed picker — how long the plane takes to cross the screen
+            // MARK: Alert lead time
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Alert me")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(.secondary)
+                Picker("Alert me", selection: $controller.alertMinutesBefore) {
+                    ForEach(alertOptions, id: \.self) { min in
+                        Text("\(min) min").tag(min)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                Text("before each meeting")
+                    .font(.system(size: 10))
+                    .foregroundStyle(.tertiary)
+            }
+
+            Divider()
+
+            // MARK: Snooze duration
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Snooze for")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(.secondary)
+                Picker("Snooze for", selection: $controller.snoozeMinutes) {
+                    ForEach(snoozeOptions, id: \.self) { min in
+                        Text("\(min) min").tag(min)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                Text("tap the airplane to snooze")
+                    .font(.system(size: 10))
+                    .foregroundStyle(.tertiary)
+            }
+
+            Divider()
+
+            // MARK: Plane speed
             VStack(alignment: .leading, spacing: 4) {
                 Text("Plane speed")
                     .font(.system(size: 11, weight: .medium))
@@ -53,6 +96,6 @@ struct MenuBarView: View {
             .buttonStyle(.plain)
         }
         .padding(14)
-        .frame(width: 260)
+        .frame(width: 270)
     }
 }

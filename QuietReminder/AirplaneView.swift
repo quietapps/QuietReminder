@@ -4,22 +4,15 @@ struct AirplaneView: View {
     let meetingTitle: String
     let minutesUntil: Int
     let flightDuration: Double
+    let screenWidth: CGFloat
+    var onSnooze: (() -> Void)? = nil
 
-    @State private var xOffset: CGFloat
+    @State private var xOffset: CGFloat = -650
     @State private var opacity: Double = 1.0
-
-    private var screenWidth: CGFloat { NSScreen.main?.frame.width ?? 1_440 }
-
-    init(meetingTitle: String, minutesUntil: Int, flightDuration: Double) {
-        self.meetingTitle   = meetingTitle
-        self.minutesUntil   = minutesUntil
-        self.flightDuration = flightDuration
-        _xOffset = State(initialValue: -650)   // start fully off-left
-    }
+    @State private var isHovered = false
 
     var body: some View {
         HStack(spacing: -10) {
-            // Text drives the size; the (already-trimmed) banner stretches to fit behind it
             Text("\(meetingTitle) in \(minutesUntil) min")
                 .font(.custom("Comic Sans MS", size: 28))
                 .foregroundStyle(.white)
@@ -31,7 +24,6 @@ struct AirplaneView: View {
                         .resizable()
                 )
 
-            // Custom airplane asset — drawn behind the banner so the rope tucks under
             Image("airplane")
                 .resizable()
                 .scaledToFit()
@@ -39,14 +31,21 @@ struct AirplaneView: View {
                 .zIndex(-1)
         }
         .fixedSize()
+        .scaleEffect(isHovered && onSnooze != nil ? 1.04 : 1.0)
+        .animation(.easeInOut(duration: 0.12), value: isHovered)
+        .onHover { hovering in
+            guard onSnooze != nil else { return }
+            isHovered = hovering
+            hovering ? NSCursor.pointingHand.push() : NSCursor.pop()
+        }
+        .onTapGesture { onSnooze?() }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         .offset(x: xOffset)
         .opacity(opacity)
         .onAppear {
             withAnimation(.linear(duration: flightDuration)) {
-                xOffset = screenWidth + 50   // end fully off-right
+                xOffset = screenWidth + 50
             }
-            // Fade out in the last half-second
             DispatchQueue.main.asyncAfter(deadline: .now() + flightDuration - 0.6) {
                 withAnimation(.easeIn(duration: 0.6)) {
                     opacity = 0
@@ -57,7 +56,12 @@ struct AirplaneView: View {
 }
 
 #Preview {
-    AirplaneView(meetingTitle: "Weekly Standup", minutesUntil: 5, flightDuration: 14)
-        .frame(width: 1000, height: 100)
-        .background(Color.gray.opacity(0.2))
+    AirplaneView(
+        meetingTitle:   "Weekly Standup",
+        minutesUntil:   5,
+        flightDuration: 14,
+        screenWidth:    1000
+    )
+    .frame(width: 1000, height: 110)
+    .background(Color.gray.opacity(0.2))
 }
