@@ -12,8 +12,11 @@ A native macOS menu bar app that sends a hand-drawn airplane trailing a banner a
 [![Swift](https://img.shields.io/badge/Swift-5.9-F05138?logo=swift&logoColor=white)](https://swift.org)
 [![SwiftUI](https://img.shields.io/badge/SwiftUI-AppKit-2396F3?logo=swift&logoColor=white)](https://developer.apple.com/xcode/swiftui/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/quietapps/QuietReminder?display_name=tag)](https://github.com/quietapps/QuietReminder/releases)
+[![Downloads](https://img.shields.io/github/downloads/quietapps/QuietReminder/total.svg)](https://github.com/quietapps/QuietReminder/releases)
+[![Stars](https://img.shields.io/github/stars/quietapps/QuietReminder?style=social)](https://github.com/quietapps/QuietReminder/stargazers)
 
-[Features](#features) · [Usage](#usage) · [Build from source](#build-from-source) · [FAQ](#faq)
+[Install](#install) · [Features](#features) · [Usage](#usage) · [Build from source](#build-from-source) · [FAQ](#faq)
 
 <p>
   <img src="media/demo.gif" alt="Demo" />
@@ -47,6 +50,111 @@ Works with any calendar you've connected to Calendar.app — iCloud, Google, Exc
 - **Launch at login** — registers with `SMAppService`; toggle in Preferences
 - **Test mode** — trigger the animation on demand from the menu bar
 - **Menu bar agent** — no Dock icon, no app switcher entry
+
+## Install
+
+> **Note:** Quiet Reminder is not code-signed with an Apple Developer ID. macOS Gatekeeper will warn on first launch. The steps below work around it automatically.
+
+### Homebrew (recommended)
+
+```bash
+brew tap quietapps/quietreminder
+brew install --cask quietreminder
+```
+
+The cask strips the macOS quarantine attribute on install so Gatekeeper does not block launch. The tap is at [quietapps/homebrew-quietreminder](https://github.com/quietapps/homebrew-quietreminder).
+
+### Direct download
+
+1. Grab `QuietReminder-1.3.zip` from the [latest release](https://github.com/quietapps/QuietReminder/releases/latest)
+2. Unzip → drag **Quiet Reminder.app** into `/Applications`
+3. Strip the quarantine attribute (or right-click → Open once):
+
+```bash
+xattr -cr "/Applications/Quiet Reminder.app"
+```
+
+4. Launch Quiet Reminder — the ✈️ icon appears in your menu bar
+5. Click ✈️ → **Grant Calendar access** and allow when prompted
+
+### If the app doesn't open (Gatekeeper blocked it)
+
+macOS silently blocks unsigned binaries on first launch. Fix it once with any of these:
+
+**Option A — Right-click open (no Terminal needed)**
+1. Open Finder → `/Applications`
+2. Right-click **Quiet Reminder.app** → **Open**
+3. Click **Open** in the warning dialog
+4. macOS remembers your choice for every future launch
+
+**Option B — Terminal**
+```bash
+xattr -cr "/Applications/Quiet Reminder.app"
+```
+
+**Option C — System Settings**
+1. Try to launch the app — macOS shows a blocked notification
+2. Open **System Settings → Privacy & Security**
+3. Scroll down to the message about Quiet Reminder
+4. Click **Open Anyway**
+
+## Updating
+
+### Homebrew
+
+```bash
+brew update
+brew upgrade --cask quietreminder
+```
+
+### Direct download
+
+Download the newer zip from [Releases](https://github.com/quietapps/QuietReminder/releases), drag the new **Quiet Reminder.app** over the old one in `/Applications`, then run:
+
+```bash
+xattr -cr "/Applications/Quiet Reminder.app"
+```
+
+## Uninstalling
+
+### Homebrew
+
+```bash
+# Remove the app and its preferences (via the cask's zap stanza)
+brew uninstall --cask --zap quietreminder
+
+# Drop the tap
+brew untap quietapps/quietreminder
+
+# Purge Homebrew's download cache
+brew cleanup --prune=all -s
+```
+
+Optional manual cleanup if you skipped `--zap`:
+
+```bash
+defaults delete app.quiet.QuietReminder 2>/dev/null
+rm -rf ~/Library/Preferences/app.quiet.QuietReminder.plist \
+       ~/Library/Application\ Support/Quiet\ Reminder \
+       ~/Library/Caches/app.quiet.QuietReminder \
+       ~/Library/HTTPStorages/app.quiet.QuietReminder \
+       ~/Library/Saved\ Application\ State/app.quiet.QuietReminder.savedState
+```
+
+### Direct download
+
+```bash
+# Move the app to Trash
+rm -rf "/Applications/Quiet Reminder.app"
+
+# Remove saved settings + caches
+defaults delete app.quiet.QuietReminder 2>/dev/null
+rm -rf ~/Library/Preferences/app.quiet.QuietReminder.plist \
+       ~/Library/Application\ Support/Quiet\ Reminder \
+       ~/Library/Caches/app.quiet.QuietReminder \
+       ~/Library/HTTPStorages/app.quiet.QuietReminder \
+       ~/Library/Saved\ Application\ State/app.quiet.QuietReminder.savedState
+```
 
 ## Usage
 
