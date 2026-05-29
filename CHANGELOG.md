@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **Menu bar icon** — updated to a cleaner outlined airplane silhouette; regenerated as a black-on-transparent template image at 1×/2×/3× (22/44/66 px) so macOS auto-tints for light and dark menu bars.
 - **`event.url` unwrapping** — if the ICS `URL:` field itself contains a SafeLinks or Mimecast wrapper, it is now decoded before use rather than returned verbatim.
+- **Hover detection rewrite** — replaced `NSTrackingArea`-based hover (only the topmost overlapping window receives tracking events, breaking lower banners) with a 60 Hz cursor-position check driven by the existing Combine animation tick plus a local mouse-event monitor. `ignoresMouseEvents` starts `true` (never blocks other apps) and is toggled `false` only when the cursor enters the airplane's content region, so every concurrent banner is independently hoverable regardless of z-order. `isHovered` moved from view `@State` into `AirplaneAnimController` so the overlay window can drive it directly.
 
 ---
 

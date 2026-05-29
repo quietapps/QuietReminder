@@ -255,7 +255,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -263,6 +263,7 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "Quiet Reminder";
+				INFOPLIST_KEY_CFBundleName = "Quiet Reminder";
 				INFOPLIST_KEY_LSUIElement = YES;
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Quiet Reminder reads upcoming events so it can fly a banner across your screen 5 minutes before each meeting.";
 				INFOPLIST_KEY_NSCalendarsUsageDescription = "Quiet Reminder reads upcoming events so it can fly a banner across your screen 5 minutes before each meeting.";
@@ -294,7 +295,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -302,6 +303,7 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "Quiet Reminder";
+				INFOPLIST_KEY_CFBundleName = "Quiet Reminder";
 				INFOPLIST_KEY_LSUIElement = YES;
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Quiet Reminder reads upcoming events so it can fly a banner across your screen 5 minutes before each meeting.";
 				INFOPLIST_KEY_NSCalendarsUsageDescription = "Quiet Reminder reads upcoming events so it can fly a banner across your screen 5 minutes before each meeting.";

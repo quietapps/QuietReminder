@@ -4,8 +4,9 @@ import SwiftUI
 // 60 Hz timer-driven position so animation can be paused on hover.
 @MainActor
 final class AirplaneAnimController: ObservableObject {
-    @Published var xOffset: CGFloat = -600
-    @Published var opacity: Double  = 1.0
+    @Published var xOffset:   CGFloat = -600
+    @Published var opacity:   Double  = 1.0
+    @Published var isHovered: Bool    = false
     var isPaused = false
 
     private let endX: CGFloat
@@ -124,7 +125,6 @@ struct AirplaneView: View {
     var onJoin: (() -> Void)? = nil
 
     @ObservedObject private var anim: AirplaneAnimController
-    @State private var isHovered = false
 
     init(meetingTitle: String,
          participants: String?,
@@ -168,7 +168,7 @@ struct AirplaneView: View {
                             .foregroundStyle(theme.bannerTextColor.opacity(0.75))
                             .lineLimit(1)
                     }
-                    if isHovered, snoozeLabel != nil || onJoin != nil {
+                    if anim.isHovered, snoozeLabel != nil || onJoin != nil {
                         HStack(spacing: 8) {
                             if let label = snoozeLabel {
                                 ActionButton(title: label, action: { onSnooze?() })
@@ -215,19 +215,14 @@ struct AirplaneView: View {
             }
         }
         .fixedSize()
-        .scaleEffect(isHovered ? 1.02 : 1.0)
-        .animation(.easeInOut(duration: 0.18), value: isHovered)
-        .onHover { hovering in
-            withAnimation(.easeInOut(duration: 0.18)) { isHovered = hovering }
-            anim.isPaused = hovering
-            if hovering { NSCursor.pointingHand.push() } else { NSCursor.pop() }
-        }
+        .scaleEffect(anim.isHovered ? 1.02 : 1.0)
+        .animation(.easeInOut(duration: 0.18), value: anim.isHovered)
         .position(x: anim.xOffset, y: 60)
         .opacity(anim.opacity)
         .onAppear  { anim.start() }
         .onDisappear {
             anim.stop()
-            if isHovered { NSCursor.pop() }
+            clearHover(for: anim)
         }
     }
 }

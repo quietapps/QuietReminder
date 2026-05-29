@@ -4,7 +4,7 @@
 
 # Quiet Reminder
 
-**A pink airplane flies across your screen before every meeting.**
+**A hand-drawn airplane flies across your screen before every meeting.**
 
 A native macOS menu bar app that sends a hand-drawn airplane trailing a banner across your screen five minutes before each calendar event — so you never miss a meeting. Part of the [Quiet Apps](https://github.com/quietapps) family.
 
@@ -25,7 +25,7 @@ A native macOS menu bar app that sends a hand-drawn airplane trailing a banner a
 
 ## Why
 
-You're heads-down in code, a doc, a design — and the standup starts in three minutes. Quiet Reminder sends a hand-drawn pink airplane gliding across your screen, trailing a banner with the meeting title, five minutes before every event on your calendar. No notification badge to dismiss, no menu bar to check. You literally cannot miss it.
+You're heads-down in code, a doc, a design — and the standup starts in three minutes. Quiet Reminder sends a hand-drawn airplane gliding across your screen, trailing a banner with the meeting title, five minutes before every event on your calendar. No notification badge to dismiss, no menu bar to check. You literally cannot miss it.
 
 Works with any calendar you've connected to Calendar.app — iCloud, Google, Exchange, or all three at once.
 
