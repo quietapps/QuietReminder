@@ -3,6 +3,12 @@ import SwiftUI
 struct MenuBarView: View {
     @EnvironmentObject var controller: AppController
 
+    private func timeString(_ date: Date) -> String {
+        let f = DateFormatter()
+        f.timeStyle = .short
+        return f.string(from: date)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
 
@@ -35,6 +41,29 @@ struct MenuBarView: View {
                 .labelsHidden()
             }
 
+            if controller.showUpcomingEvents && !controller.upcomingEvents.isEmpty {
+                Divider()
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("TODAY")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                    ForEach(controller.upcomingEvents) { event in
+                        HStack(spacing: 6) {
+                            Circle()
+                                .fill(Color.accentColor.opacity(0.8))
+                                .frame(width: 6, height: 6)
+                            Text(event.title)
+                                .font(.system(size: 12))
+                                .lineLimit(1)
+                            Spacer()
+                            Text(timeString(event.startDate))
+                                .font(.system(size: 11))
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+            }
+
             Divider()
 
             Button {
@@ -61,6 +90,6 @@ struct MenuBarView: View {
             .buttonStyle(.plain)
         }
         .padding(14)
-        .frame(width: 220)
+        .frame(width: 250)
     }
 }

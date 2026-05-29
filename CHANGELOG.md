@@ -4,6 +4,24 @@ All notable changes to **Quiet Reminder** are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3] — 2026-05-29
+
+**Build 2** · Menu bar icon refresh and smarter meeting join-link detection.
+
+### Added
+
+- **SafeLinks support** — join URLs wrapped by Microsoft SafeLinks (`safelinks.protection.outlook.com`) are now decoded; the inner meeting URL is extracted and used directly rather than linking to the wrapper.
+- **Mimecast support** — join URLs wrapped by Mimecast (`mimecastprotect.com`) are detected; inner URL decoded if available, otherwise the Mimecast redirect URL is used so the browser follows through to the meeting.
+- **Angle-bracket URL parsing** — Outlook and Teams invite bodies often format links as `<https://…>`; the extractor now strips the brackets and validates the inner URL.
+- **`event.location` scan** — join-link search now also checks the event location field, which some calendar systems populate with the meeting URL.
+
+### Changed
+
+- **Menu bar icon** — updated to a cleaner outlined airplane silhouette; regenerated as a black-on-transparent template image at 1×/2×/3× (22/44/66 px) so macOS auto-tints for light and dark menu bars.
+- **`event.url` unwrapping** — if the ICS `URL:` field itself contains a SafeLinks or Mimecast wrapper, it is now decoded before use rather than returned verbatim.
+
+---
+
 ## [1.2] — 2026-05-28
 
 **Build 1** · Tabbed preferences, calendar filters, banner redesign, themes, and fixes.

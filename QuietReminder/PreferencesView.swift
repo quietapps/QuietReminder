@@ -139,11 +139,11 @@ private struct ThemeButton: View {
                     RoundedRectangle(cornerRadius: 10)
                         .fill(theme.accentColor.opacity(0.12))
                         .frame(width: 76, height: 60)
-                    Image("airplane")
+                    Image(theme.vehicleImageName)
                         .resizable()
                         .scaledToFit()
                         .frame(height: 50)
-                        .hueRotation(.degrees(theme.hueShift))
+                        .hueRotation(.degrees(theme.vehicleHueShift))
                 }
                 .overlay(
                     RoundedRectangle(cornerRadius: 10)
@@ -164,10 +164,17 @@ private struct ThemeButton: View {
 struct PreferencesView: View {
     @EnvironmentObject var controller: AppController
     @State private var selectedTab: SettingsTab = .alerts
+    @State private var newThreshold: Int = -1
 
-    private let alertOptions      = [0, 2, 5, 10, 15]
-    private let earlyAlertOptions = [0, 10, 15, 20, 30]
-    private let snoozeOptions     = [2, 5, 10]
+    private let snoozeOptions = [0, 2, 5, 10]
+    private let allThresholdOptions = [0, 1, 2, 3, 5, 10, 15, 20, 30, 45, 60]
+    private var unusedThresholdOptions: [Int] {
+        allThresholdOptions.filter { !controller.alertThresholds.contains($0) }
+    }
+    private func hourLabel(_ hour: Int) -> String {
+        let h = hour % 12 == 0 ? 12 : hour % 12
+        return "\(h):00 \(hour < 12 ? "AM" : "PM")"
+    }
 
     private var calendarsByAccount: [(account: String, calendars: [CalendarInfo])] {
         let grouped = Dictionary(grouping: controller.availableCalendars, by: \.accountName)
@@ -267,57 +274,145 @@ struct PreferencesView: View {
                     .toggleStyle(.switch)
                     .labelsHidden()
             }
+        }
 
-            Divider().padding(.leading, 56)
-
-            SettingsRow(icon: "bell.fill", iconColor: .blue,
-                        title: "Alert me",
-                        subtitle: "Before each meeting") {
-                Picker("", selection: $controller.alertMinutesBefore) {
-                    ForEach(alertOptions, id: \.self) { min in
-                        Text(min == 0 ? "On time" : "\(min) min").tag(min)
+        SettingsCard(title: "Alert Timing") {
+            // At event start toggle (special, not in list)
+            SettingsRow(icon: "flag.checkered", iconColor: .red,
+                        title: "At event start") {
+                Toggle("", isOn: Binding(
+                    get: { controller.alertThresholds.contains(0) },
+                    set: { on in
+                        if on {
+                            if !controller.alertThresholds.contains(0) { controller.alertThresholds.append(0) }
+                        } else {
+                            controller.alertThresholds.removeAll { $0 == 0 }
+                        }
                     }
-                }
-                .pickerStyle(.menu)
+                ))
+                .toggleStyle(.switch)
                 .labelsHidden()
-                .frame(width: 100)
             }
 
-            Divider().padding(.leading, 56)
+            // Non-zero thresholds with remove buttons
+            let nonZero = controller.alertThresholds.filter { $0 > 0 }.sorted(by: >)
+            ForEach(nonZero, id: \.self) { threshold in
+                Divider().padding(.leading, 56)
+                SettingsRow(icon: "bell.fill", iconColor: .blue,
+                            title: "\(threshold) min before") {
+                    Button {
+                        controller.alertThresholds.removeAll { $0 == threshold }
+                    } label: {
+                        Image(systemName: "minus.circle.fill").foregroundStyle(.red)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
 
-            SettingsRow(icon: "bell.badge.fill", iconColor: .orange,
-                        title: "Early warning",
-                        subtitle: "Second flyover at a higher lead time") {
-                Picker("", selection: $controller.earlyAlertMinutes) {
-                    ForEach(earlyAlertOptions, id: \.self) { min in
-                        Text(min == 0 ? "Off" : "\(min) min").tag(min)
+            // Add non-zero alert
+            let unusedNonZero = allThresholdOptions.filter { $0 > 0 && !controller.alertThresholds.contains($0) }
+            if !unusedNonZero.isEmpty {
+                Divider().padding(.leading, 56)
+                SettingsRow(icon: "plus.circle.fill", iconColor: .green, title: "Add alert") {
+                    Picker("", selection: $newThreshold) {
+                        Text("Choose…").tag(-1)
+                        ForEach(unusedNonZero, id: \.self) { min in
+                            Text("\(min) min").tag(min)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .labelsHidden()
+                    .frame(width: 120)
+                    .onChange(of: newThreshold) { _, val in
+                        guard val >= 0 else { return }
+                        controller.alertThresholds.append(val)
+                        newThreshold = -1
                     }
                 }
-                .pickerStyle(.menu)
-                .labelsHidden()
-                .frame(width: 100)
+            }
+        }
+
+        SettingsCard(title: "Quiet Hours") {
+            SettingsRow(icon: "moon.fill", iconColor: .indigo,
+                        title: "Quiet hours",
+                        subtitle: "No flyovers during these hours") {
+                Toggle("", isOn: $controller.quietHoursEnabled)
+                    .toggleStyle(.switch)
+                    .labelsHidden()
+            }
+            if controller.quietHoursEnabled {
+                Divider().padding(.leading, 56)
+                SettingsRow(icon: "moon.stars.fill", iconColor: .purple,
+                            title: "From",
+                            subtitle: "Start of quiet period") {
+                    Picker("", selection: $controller.quietHoursStart) {
+                        ForEach(0..<24, id: \.self) { h in
+                            Text(hourLabel(h)).tag(h)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .labelsHidden()
+                    .frame(width: 100)
+                }
+                Divider().padding(.leading, 56)
+                SettingsRow(icon: "sun.horizon.fill", iconColor: .orange,
+                            title: "Until",
+                            subtitle: "End of quiet period") {
+                    Picker("", selection: $controller.quietHoursEnd) {
+                        ForEach(0..<24, id: \.self) { h in
+                            Text(hourLabel(h)).tag(h)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .labelsHidden()
+                    .frame(width: 100)
+                }
+            }
+        }
+
+        SettingsCard(title: "End Warning") {
+            SettingsRow(icon: "bell.badge.slash", iconColor: .orange,
+                        title: "Warn before end",
+                        subtitle: "Fly again near end of meeting") {
+                Toggle("", isOn: $controller.meetingEndWarningEnabled)
+                    .toggleStyle(.switch)
+                    .labelsHidden()
+            }
+            if controller.meetingEndWarningEnabled {
+                Divider().padding(.leading, 56)
+                SettingsRow(icon: "timer", iconColor: .orange,
+                            title: "Warning at") {
+                    Picker("", selection: $controller.meetingEndWarningMinutes) {
+                        ForEach([1, 2, 3, 5, 10], id: \.self) { min in
+                            Text("\(min) min before end").tag(min)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .labelsHidden()
+                    .frame(width: 160)
+                }
             }
         }
 
         SettingsCard(title: "Snooze") {
             SettingsRow(icon: "moon.zzz.fill", iconColor: .purple,
                         title: "Snooze duration",
-                        subtitle: "Tap the airplane to snooze") {
+                        subtitle: "Tap airplane to snooze · Off = dismiss forever") {
                 Picker("", selection: $controller.snoozeMinutes) {
                     ForEach(snoozeOptions, id: \.self) { min in
-                        Text("\(min) min").tag(min)
+                        Text(min == 0 ? "Off" : "\(min) min").tag(min)
                     }
                 }
                 .pickerStyle(.segmented)
                 .labelsHidden()
-                .frame(width: 165)
+                .frame(width: 210)
             }
         }
     }
 
     @ViewBuilder private var displayTab: some View {
         SettingsCard(title: "Theme") {
-            HStack(spacing: 16) {
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 80, maximum: 100), spacing: 12)], spacing: 12) {
                 ForEach(AirplaneTheme.allCases, id: \.self) { theme in
                     ThemeButton(
                         theme: theme,
@@ -329,7 +424,36 @@ struct PreferencesView: View {
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 12)
-            .frame(maxWidth: .infinity)
+        }
+
+        SettingsCard(title: "Screens") {
+            SettingsRow(icon: "display.2", iconColor: .indigo,
+                        title: "Show on all screens") {
+                Toggle("", isOn: $controller.showOnAllScreens)
+                    .toggleStyle(.switch)
+                    .labelsHidden()
+            }
+
+            if !controller.showOnAllScreens {
+                Divider().padding(.leading, 56)
+
+                ForEach(Array(NSScreen.screens.enumerated()), id: \.offset) { _, screen in
+                    let name = screen.localizedName
+                    let isMain = screen == NSScreen.main
+                    SettingsRow(icon: "display", iconColor: .indigo,
+                                title: name + (isMain ? " (Main)" : "")) {
+                        Button {
+                            controller.selectedScreenName = name
+                        } label: {
+                            Image(systemName: controller.selectedScreenName == name
+                                  ? "checkmark.circle.fill" : "circle")
+                                .foregroundStyle(controller.selectedScreenName == name ? Color.indigo : .secondary)
+                                .font(.system(size: 18))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
         }
 
         SettingsCard(title: "Display") {
@@ -395,6 +519,26 @@ struct PreferencesView: View {
                         title: "Sound",
                         subtitle: "Play Ping when airplane appears") {
                 Toggle("", isOn: $controller.playSound)
+                    .toggleStyle(.switch)
+                    .labelsHidden()
+            }
+
+            Divider().padding(.leading, 56)
+
+            SettingsRow(icon: "list.bullet.rectangle", iconColor: .teal,
+                        title: "Upcoming events",
+                        subtitle: "Show next 3 events in menu bar popover") {
+                Toggle("", isOn: $controller.showUpcomingEvents)
+                    .toggleStyle(.switch)
+                    .labelsHidden()
+            }
+
+            Divider().padding(.leading, 56)
+
+            SettingsRow(icon: "timer", iconColor: .blue,
+                        title: "Menu bar countdown",
+                        subtitle: "Show time to next meeting in menu bar") {
+                Toggle("", isOn: $controller.showMenuBarCountdown)
                     .toggleStyle(.switch)
                     .labelsHidden()
             }

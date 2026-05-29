@@ -31,24 +31,37 @@ Works with any calendar you've connected to Calendar.app — iCloud, Google, Exc
 
 ## Features
 
-- **Flying banner** — borderless transparent panel at screen-saver level; floats above every window including fullscreen apps
+- **Flying banner** — borderless transparent panel above every window, including fullscreen apps; banner shows meeting title and attendee names on two lines
 - **Reads all your calendars** — EventKit reads directly from Calendar.app; any account (iCloud, Google, Exchange) connected there is automatically included
-- **Configurable lead time** — defaults to 5 minutes before each event
-- **Speed picker** — Slow / Normal / Fast flight across the screen
-- **Test mode** — trigger the animation on demand with a fake event to preview the visuals
-- **Menu bar agent** — no Dock icon, just the ✈️ in the menu bar
-- **Polling** — checks your calendar every 60 seconds; an in-memory set prevents the same event from triggering twice
+- **Per-calendar filter** — toggle individual calendars on or off in Preferences; changes take effect immediately, no restart needed
+- **Configurable lead time** — alert 0, 2, 5, 10, or 15 minutes before each event; "On time" shows a "NOW" banner at the moment the meeting starts
+- **Early warning** — optional second flyover at a higher threshold (10–30 min) before the main alert
+- **Multi-screen** — one airplane panel per connected display; all monitors get the alert simultaneously
+- **Snooze** — click the airplane mid-flight to snooze; re-alerts after a configurable duration (2, 5, or 10 minutes)
+- **Skip solo events** — optionally suppress alerts for events with no other attendees (personal blocks, reminders)
+- **Meeting join links** — detects Teams, Zoom, Google Meet, Webex, and more; decodes Microsoft SafeLinks and Mimecast protection wrappers automatically
+- **Airplane themes** — five color presets (Classic, Sky, Forest, Sunset, Lavender) applied via hue rotation; no extra artwork needed
+- **Configurable screen position** — slider controls vertical position of the airplane strip (top to bottom)
+- **Speed picker** — Slow / Normal / Fast flight duration
+- **Sound** — plays system Ping sound on each alert; toggleable
+- **Launch at login** — registers with `SMAppService`; toggle in Preferences
+- **Test mode** — trigger the animation on demand from the menu bar
+- **Menu bar agent** — no Dock icon, no app switcher entry
 
 ## Usage
 
 | Action | How |
 |---|---|
-| Grant calendar access | Click ✈️ in menu bar → **Grant Calendar access** → Allow |
+| Grant calendar access | Click ✈️ → **Grant Calendar access** → Allow |
+| Open Preferences | Click ✈️ → **Preferences…** |
+| Change alert lead time | Preferences → Alerts tab |
+| Filter calendars | Preferences → Calendars tab |
+| Change theme or position | Preferences → Display tab |
+| Snooze an alert | Click the airplane mid-flight |
 | Test the animation | Click ✈️ → **Test airplane** |
-| Change flight speed | Click ✈️ → Slow / Normal / Fast |
-| Quit | Click ✈️ → **Quit Quiet Reminder** |
+| Quit | Click ✈️ → **Quit** |
 
-The airplane appears automatically ~5 minutes before each upcoming event. No further interaction needed once Calendar access is granted.
+The airplane appears automatically before each upcoming event. No further interaction needed once Calendar access is granted.
 
 ## Permissions
 
@@ -111,36 +124,9 @@ QuietReminder/
 
 No external dependencies — Apple frameworks only (SwiftUI, AppKit, EventKit).
 
-## Customization
-
-### Visuals — `QuietReminder/AirplaneView.swift`
-
-| What | Where |
-|---|---|
-| Flight duration (slower/faster) | `flightDuration` |
-| Plane size | `Image("airplane")` → `frame(width:height:)` |
-| Banner padding | `padding(.horizontal:)` / `padding(.vertical:)` |
-| Font / text size / color | `font(...)`, `foregroundStyle(...)` |
-| Vertical screen position | `AirplaneOverlayWindow.swift` → `yPos` |
-
-### Alert timing — `QuietReminder/CalendarPoller.swift`
-
-```swift
-static let alertMinutesBefore = 5   // change to alert at a different lead time
-```
-
-### Artwork
-
-Replace assets in `QuietReminder/Assets.xcassets/`:
-
-- `airplane.imageset/` — flying airplane (right-facing)
-- `banner.imageset/` — pink banner background
-- `AppIcon.appiconset/` — Dock + Finder icon
-- `menubar.imageset/` — menu bar silhouette (template image, monochrome on transparent)
-
 ## Configuration
 
-Settings live in `UserDefaults`. Reset with:
+All settings are in **Preferences** (✈️ → Preferences…). Reset to defaults:
 
 ```bash
 defaults delete app.quiet.QuietReminder
@@ -149,22 +135,22 @@ defaults delete app.quiet.QuietReminder
 ## FAQ
 
 **Does it work with Google Calendar?**
-Yes — connect Google to Calendar.app via System Settings → Internet Accounts and Quiet Reminder picks it up automatically via EventKit. No separate setup needed.
+Yes — connect Google to Calendar.app via System Settings → Internet Accounts. Quiet Reminder picks it up via EventKit automatically. No API keys or OAuth setup.
 
-**Can I change the alert time (earlier or later than 5 minutes)?**
-Edit `static let alertMinutesBefore` in `CalendarPoller.swift` and rebuild.
+**My Teams meeting link isn't showing.**
+The app decodes Microsoft SafeLinks and Mimecast-wrapped URLs automatically. If the link still doesn't appear, check that the calendar event has a URL or notes field containing the join link.
 
 **The airplane doesn't appear before my meeting.**
-Make sure Calendar access is granted (✈️ menu shows a green checkmark). If the app was running before you granted access, click **Test airplane** to confirm the animation works, then wait for the next event.
+Check that Calendar access is granted (green indicator in ✈️ menu). Use **Test airplane** to confirm animation works. Check Preferences → Calendars to make sure the relevant calendar is not filtered out.
 
 **Can I use it with multiple calendars?**
-Yes — EventKit reads every calendar configured in Calendar.app, across all connected accounts.
+Yes — EventKit reads every calendar in Calendar.app. Toggle individual calendars in Preferences → Calendars.
 
-**Can I make it appear earlier than 5 minutes?**
-Edit `alertMinutesBefore` in `CalendarPoller.swift`.
+**How do I snooze?**
+Click the airplane while it's flying. It re-alerts after the snooze duration configured in Preferences → Alerts.
 
 **How do I quit?**
-Click ✈️ in the menu bar → **Quit Quiet Reminder**.
+Click ✈️ → **Quit**.
 
 ## License
 

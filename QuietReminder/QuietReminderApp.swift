@@ -10,7 +10,15 @@ struct QuietReminderApp: App {
             MenuBarView()
                 .environmentObject(controller)
         } label: {
-            Image("menubar")
+            HStack(spacing: 3) {
+                Image("menubar")
+                    .renderingMode(.template)
+                if let txt = controller.menuBarCountdownText {
+                    Text(txt)
+                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+                }
+            }
+            .foregroundStyle(.white)
         }
         .menuBarExtraStyle(.window)
     }

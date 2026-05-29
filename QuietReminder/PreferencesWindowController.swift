@@ -5,6 +5,8 @@ final class PreferencesWindowController: NSObject, NSWindowDelegate {
     private var window: NSWindow?
 
     func open(with controller: AppController) {
+        NSApp.setActivationPolicy(.regular)
+
         // Bring existing window to front if already open
         if let w = window, w.isVisible {
             w.makeKeyAndOrderFront(nil)
@@ -34,5 +36,6 @@ final class PreferencesWindowController: NSObject, NSWindowDelegate {
 
     func windowWillClose(_ notification: Notification) {
         window = nil
+        NSApp.setActivationPolicy(.accessory)
     }
 }

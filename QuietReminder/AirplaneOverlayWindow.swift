@@ -1,16 +1,18 @@
 import AppKit
 import SwiftUI
 
-// Passes mouse events through to windows behind it, except where SwiftUI
-// has an interactive subview (e.g. the tap-to-snooze gesture on the airplane).
+// Passes clicks through to apps behind UNLESS the click lands on an NSButton
+// (the snooze button). Hover events bypass hitTest entirely — they go to the
+// NSTrackingArea owner — so .onHover keeps working with this override.
 private final class PassthroughHostingView<Content: View>: NSHostingView<Content> {
     override func hitTest(_ point: NSPoint) -> NSView? {
         let hit = super.hitTest(point)
-        // nil → click passes through to the window beneath.
-        // When the hit is the hosting view itself (background, no gesture owner)
-        // we return nil. When it's a specific SwiftUI subview that owns a gesture,
-        // we return it so the gesture fires normally.
-        return hit == self ? nil : hit
+        var v: NSView? = hit
+        while let view = v {
+            if view is NSButton { return hit }
+            v = view.superview
+        }
+        return nil
     }
 }
 
@@ -24,11 +26,14 @@ final class AirplaneOverlayWindow: NSPanel {
          flightDuration: Double,
          theme: AirplaneTheme = .classic,
          yPositionPercent: Double = 0.65,
-         onSnooze: (() -> Void)? = nil) {
+         animController: AirplaneAnimController,
+         onSnooze: (() -> Void)? = nil,
+         snoozeLabel: String? = nil,
+         onJoin: (() -> Void)? = nil) {
 
-        let sf = screen.frame
+        let sf     = screen.frame
         let height: CGFloat = 120
-        let yPos = sf.minY + sf.height * yPositionPercent - height / 2
+        let yPos   = sf.minY + sf.height * yPositionPercent - height / 2
 
         super.init(
             contentRect: NSRect(x: sf.minX, y: yPos, width: sf.width, height: height),
@@ -41,7 +46,7 @@ final class AirplaneOverlayWindow: NSPanel {
         self.backgroundColor      = .clear
         self.isOpaque             = false
         self.hasShadow            = false
-        self.ignoresMouseEvents   = false   // passthrough handled by hitTest override
+        self.ignoresMouseEvents   = false
         self.collectionBehavior   = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
         self.isReleasedWhenClosed = false
 
@@ -52,7 +57,10 @@ final class AirplaneOverlayWindow: NSPanel {
             flightDuration: flightDuration,
             theme:          theme,
             screenWidth:    sf.width,
-            onSnooze:       onSnooze
+            animController: animController,
+            onSnooze:       onSnooze,
+            snoozeLabel:    snoozeLabel,
+            onJoin:         onJoin
         )
         let hostingView = PassthroughHostingView(rootView: rootView)
         hostingView.frame = NSRect(x: 0, y: 0, width: sf.width, height: height)
@@ -63,4 +71,5 @@ final class AirplaneOverlayWindow: NSPanel {
 
     override var canBecomeKey:  Bool { false }
     override var canBecomeMain: Bool { false }
+    override func makeKey() {}
 }
