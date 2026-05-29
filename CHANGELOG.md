@@ -4,6 +4,34 @@ All notable changes to **Quiet Reminder** are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.8] — 2026-05-29
+
+**Build 13** · Calendar permission prompt on launch + UI polish.
+
+### Added
+
+- Calendar access is now requested automatically on first launch when permission has not yet been granted — no need to click anything.
+
+### Changed
+
+- Button label shortened to "Enable Calendar Access".
+
+## [1.4.7] — 2026-05-29
+
+**Build 12** · Fix calendar permission on macOS 26 Tahoe.
+
+### Fixed
+
+- Root cause of TCC dialog never appearing on Homebrew installs: macOS 26 Tahoe requires the `com.apple.security.personal-information.calendars` entitlement for hardened-runtime builds, even for non-sandboxed apps. Added it to `QuietReminder.entitlements`. Xcode Debug builds skip hardened runtime validation, which is why they worked while release/cask builds did not.
+
+## [1.4.1] — 2026-05-29
+
+**Build 6** · Calendar access fix for Homebrew cask installs.
+
+### Fixed
+
+- Calendar access detection now works correctly when Full Access was pre-granted (e.g. restored from backup or granted before first launch). App no longer shows "Grant Calendar Access" when access is already enabled in System Settings.
+
 ## [1.4] — 2026-05-29
 
 **Build 5** · Pause mode, calendar-color theming, display polish, and menu bar improvements.

@@ -1,17 +1,31 @@
 import Foundation
 import EventKit
+import OSLog
+
+private let logger = Logger(subsystem: "app.quiet.QuietReminder", category: "Calendar")
 
 final class AppleCalendarService: CalendarSourceProvider {
     private let store = EKEventStore()
 
     /// True if we currently have full read access to calendar events.
     var hasAccess: Bool {
-        EKEventStore.authorizationStatus(for: .event) == .fullAccess
+        let status = EKEventStore.authorizationStatus(for: .event)
+        return status == .fullAccess || status == .authorized
     }
 
     /// Prompts the user for calendar access. Returns whether access was granted.
     func requestAccess() async -> Bool {
-        (try? await store.requestFullAccessToEvents()) ?? false
+        let before = EKEventStore.authorizationStatus(for: .event)
+        logger.info("requestAccess called — status before: \(before.rawValue)")
+        do {
+            let granted = try await store.requestFullAccessToEvents()
+            let after = EKEventStore.authorizationStatus(for: .event)
+            logger.info("requestFullAccessToEvents returned: \(granted) — status after: \(after.rawValue)")
+            return granted
+        } catch {
+            logger.error("requestFullAccessToEvents threw: \(error)")
+            return false
+        }
     }
 
     var disabledCalendarIDs: Set<String> = []

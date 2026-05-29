@@ -1,7 +1,11 @@
 import Foundation
 import AppKit
 import Combine
+import EventKit
+import OSLog
 import ServiceManagement
+
+private let log = Logger(subsystem: "app.quiet.QuietReminder", category: "AppController")
 
 @MainActor
 final class AppController: ObservableObject {
@@ -219,17 +223,51 @@ final class AppController: ObservableObject {
         startPollingIfReady()
         if hasAppleAccess { availableCalendars = appleService.fetchCalendars() }
         updateCountdown()
+        if !hasAppleAccess && EKEventStore.authorizationStatus(for: .event) == .notDetermined {
+            requestAppleAccess()
+        }
     }
 
     // MARK: Public
 
     func requestAppleAccess() {
+        let statusBefore = EKEventStore.authorizationStatus(for: .event)
+        log.info("requestAppleAccess called — TCC status: \(statusBefore.rawValue)")
         Task {
             let granted = await appleService.requestAccess()
+            let statusAfter = EKEventStore.authorizationStatus(for: .event)
+            log.info("after requestAccess — granted: \(granted), TCC status: \(statusAfter.rawValue)")
+            // If dialog didn't appear (still not determined), open Settings so user can manually toggle.
+            if statusAfter == .notDetermined || (!granted && statusAfter != .fullAccess && statusAfter != .authorized) {
+                NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Calendars")!)
+            }
             await MainActor.run {
                 self.hasAppleAccess = granted
                 self.startPollingIfReady()
                 if granted {
+                    self.availableCalendars = self.appleService.fetchCalendars()
+                    self.updateCountdown()
+                    self.refreshUpcomingEvents()
+                } else {
+                    self.startAccessPolling()
+                }
+            }
+        }
+    }
+
+    private var accessPollTimer: Timer?
+
+    private func startAccessPolling() {
+        accessPollTimer?.invalidate()
+        accessPollTimer = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] timer in
+            guard let self else { timer.invalidate(); return }
+            Task { @MainActor in
+                let granted = self.appleService.hasAccess
+                if granted {
+                    timer.invalidate()
+                    self.accessPollTimer = nil
+                    self.hasAppleAccess = true
+                    self.startPollingIfReady()
                     self.availableCalendars = self.appleService.fetchCalendars()
                     self.updateCountdown()
                     self.refreshUpcomingEvents()

@@ -52,7 +52,7 @@ struct MenuBarView: View {
                 Button {
                     controller.requestAppleAccess()
                 } label: {
-                    Label("Grant Calendar access", systemImage: "calendar")
+                    Label("Enable Calendar Access", systemImage: "calendar")
                         .font(.system(size: 13, weight: .medium))
                 }
                 .buttonStyle(.borderedProminent)
