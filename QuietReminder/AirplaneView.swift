@@ -8,6 +8,7 @@ final class AirplaneAnimController: ObservableObject {
     @Published var opacity:   Double  = 1.0
     @Published var isHovered: Bool    = false
     var isPaused = false
+    var onComplete: (() -> Void)?
 
     private let endX: CGFloat
     private let flightDuration: TimeInterval
@@ -43,7 +44,7 @@ final class AirplaneAnimController: ObservableObject {
         if elapsed > fadeStart {
             opacity = max(0, 1.0 - (elapsed - fadeStart) / 0.6)
         }
-        if elapsed >= flightDuration { stop() }
+        if elapsed >= flightDuration { stop(); onComplete?() }
     }
 }
 
@@ -120,6 +121,8 @@ struct AirplaneView: View {
     let flightDuration: Double
     var theme: AirplaneTheme = .classic
     let screenWidth: CGFloat
+    var bannerOpacity: Double = 1.0
+    var calendarColor: NSColor? = nil
     var onSnooze: (() -> Void)? = nil
     var snoozeLabel: String? = nil
     var onJoin: (() -> Void)? = nil
@@ -132,6 +135,8 @@ struct AirplaneView: View {
          flightDuration: Double,
          theme: AirplaneTheme = .classic,
          screenWidth: CGFloat,
+         bannerOpacity: Double = 1.0,
+         calendarColor: NSColor? = nil,
          animController: AirplaneAnimController,
          onSnooze: (() -> Void)? = nil,
          snoozeLabel: String? = nil,
@@ -142,6 +147,8 @@ struct AirplaneView: View {
         self.flightDuration = flightDuration
         self.theme          = theme
         self.screenWidth    = screenWidth
+        self.bannerOpacity  = bannerOpacity
+        self.calendarColor  = calendarColor
         self.anim           = animController
         self.onSnooze       = onSnooze
         self.snoozeLabel    = snoozeLabel
@@ -154,18 +161,26 @@ struct AirplaneView: View {
         return "ends in \(-minutesUntil) min"
     }
 
+    private var effectiveBannerTextColor: Color {
+        guard let cal = calendarColor else { return theme.bannerTextColor }
+        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        cal.getRed(&r, green: &g, blue: &b, alpha: &a)
+        let luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b
+        return luminance > 0.55 ? Color(white: 0.1) : .white
+    }
+
     var body: some View {
         ZStack(alignment: .leading) {
             HStack(spacing: -10) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("\(meetingTitle) \(timeLabel)")
                         .font(.custom("Comic Sans MS", size: 26))
-                        .foregroundStyle(theme.bannerTextColor)
+                        .foregroundStyle(effectiveBannerTextColor)
                         .lineLimit(1)
                     if let p = participants {
                         Text(p)
                             .font(.custom("Comic Sans MS", size: 15))
-                            .foregroundStyle(theme.bannerTextColor.opacity(0.75))
+                            .foregroundStyle(effectiveBannerTextColor.opacity(0.75))
                             .lineLimit(1)
                     }
                     if anim.isHovered, snoozeLabel != nil || onJoin != nil {
@@ -186,7 +201,11 @@ struct AirplaneView: View {
                 .padding(.vertical, 12)
                 .background(
                     Group {
-                        if let tint = theme.bannerTintColor {
+                        if let cal = calendarColor {
+                            Image("banner").resizable()
+                                .saturation(0)
+                                .colorMultiply(Color(nsColor: cal))
+                        } else if let tint = theme.bannerTintColor {
                             Image("banner").resizable()
                                 .saturation(0)
                                 .colorMultiply(Color(nsColor: tint))
@@ -197,6 +216,7 @@ struct AirplaneView: View {
                     }
                 )
                 .fixedSize()
+                .opacity(bannerOpacity)
 
                 // Airplane image; transparent NSButton overlay captures clicks when
                 // a join URL is available (hitTest only returns NSButton hits).

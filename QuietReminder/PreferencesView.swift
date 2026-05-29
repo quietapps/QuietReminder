@@ -1,5 +1,41 @@
 import SwiftUI
 
+private struct HandCursorView: NSViewRepresentable {
+    func makeNSView(context: Context) -> _CursorNSView { _CursorNSView() }
+    func updateNSView(_ nsView: _CursorNSView, context: Context) {}
+
+    class _CursorNSView: NSView {
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            updateTrackingAreas()
+        }
+
+        override func updateTrackingAreas() {
+            trackingAreas.forEach { removeTrackingArea($0) }
+            addTrackingArea(NSTrackingArea(
+                rect: bounds,
+                options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect],
+                owner: self,
+                userInfo: nil
+            ))
+            super.updateTrackingAreas()
+        }
+
+        override func mouseEntered(with event: NSEvent) { NSCursor.pointingHand.set() }
+        override func mouseExited(with event: NSEvent)  { NSCursor.arrow.set() }
+
+        // Pass all click events through — tracking area delivery is geometric,
+        // independent of hitTest, so cursor still works.
+        override func hitTest(_ point: NSPoint) -> NSView? { nil }
+    }
+}
+
+extension View {
+    func pointingHandCursor() -> some View {
+        overlay(HandCursorView())
+    }
+}
+
 // MARK: - Reusable card + row components
 
 struct SettingsCard<Content: View>: View {
@@ -122,6 +158,7 @@ private struct TabBarButton: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .pointingHandCursor()
     }
 }
 
@@ -156,8 +193,12 @@ private struct ThemeButton: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .pointingHandCursor()
     }
 }
+
+private let systemSounds = ["Basso", "Blow", "Bottle", "Frog", "Funk", "Glass", "Hero",
+                             "Morse", "Ping", "Pop", "Purr", "Sosumi", "Submarine", "Tink"]
 
 // MARK: - Preferences view
 
@@ -243,6 +284,7 @@ struct PreferencesView: View {
                     }
                     .buttonStyle(.plain)
                     .foregroundStyle(.secondary)
+                    .pointingHandCursor()
 
                     Divider()
                         .frame(height: 14)
@@ -254,6 +296,7 @@ struct PreferencesView: View {
                     }
                     .buttonStyle(.plain)
                     .foregroundStyle(.secondary)
+                    .pointingHandCursor()
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 10)
@@ -306,6 +349,7 @@ struct PreferencesView: View {
                         Image(systemName: "minus.circle.fill").foregroundStyle(.red)
                     }
                     .buttonStyle(.plain)
+                    .pointingHandCursor()
                 }
             }
 
@@ -426,6 +470,16 @@ struct PreferencesView: View {
             .padding(.vertical, 12)
         }
 
+        SettingsCard(title: "Banner") {
+            SettingsRow(icon: "paintpalette.fill", iconColor: .purple,
+                        title: "Calendar color banner",
+                        subtitle: "Tint banner to match event's calendar color") {
+                Toggle("", isOn: $controller.useBannerCalendarColor)
+                    .toggleStyle(.switch)
+                    .labelsHidden()
+            }
+        }
+
         SettingsCard(title: "Screens") {
             SettingsRow(icon: "display.2", iconColor: .indigo,
                         title: "Show on all screens") {
@@ -437,7 +491,24 @@ struct PreferencesView: View {
             if !controller.showOnAllScreens {
                 Divider().padding(.leading, 56)
 
+                // Active Screen option
+                SettingsRow(icon: "cursorarrow.rays", iconColor: .indigo,
+                            title: "Active Screen",
+                            subtitle: "Screen where cursor is") {
+                    Button {
+                        controller.selectedScreenName = AppController.activeScreenSentinel
+                    } label: {
+                        Image(systemName: controller.selectedScreenName == AppController.activeScreenSentinel
+                              ? "checkmark.circle.fill" : "circle")
+                            .foregroundStyle(controller.selectedScreenName == AppController.activeScreenSentinel ? Color.indigo : .secondary)
+                            .font(.system(size: 18))
+                    }
+                    .buttonStyle(.plain)
+                    .pointingHandCursor()
+                }
+
                 ForEach(Array(NSScreen.screens.enumerated()), id: \.offset) { _, screen in
+                    Divider().padding(.leading, 56)
                     let name = screen.localizedName
                     let isMain = screen == NSScreen.main
                     SettingsRow(icon: "display", iconColor: .indigo,
@@ -451,6 +522,7 @@ struct PreferencesView: View {
                                 .font(.system(size: 18))
                         }
                         .buttonStyle(.plain)
+                        .pointingHandCursor()
                     }
                 }
             }
@@ -471,10 +543,21 @@ struct PreferencesView: View {
 
             Divider().padding(.leading, 56)
 
+            Divider().padding(.leading, 56)
+
             SettingsRow(icon: "arrow.up.and.down", iconColor: .teal,
                         title: "Screen position",
                         subtitle: "\(Int(controller.screenPositionPercent * 100))% from bottom") {
                 Slider(value: $controller.screenPositionPercent, in: 0.1...0.9, step: 0.05)
+                    .frame(width: 160)
+            }
+
+            Divider().padding(.leading, 56)
+
+            SettingsRow(icon: "circle.lefthalf.filled", iconColor: .indigo,
+                        title: "Banner opacity",
+                        subtitle: "\(Int(controller.bannerOpacity * 100))%") {
+                Slider(value: $controller.bannerOpacity, in: 0.3...1.0, step: 0.05)
                     .frame(width: 160)
             }
         }
@@ -517,10 +600,28 @@ struct PreferencesView: View {
         SettingsCard(title: "General") {
             SettingsRow(icon: "speaker.wave.2.fill", iconColor: .pink,
                         title: "Sound",
-                        subtitle: "Play Ping when airplane appears") {
+                        subtitle: "Play sound when airplane appears") {
                 Toggle("", isOn: $controller.playSound)
                     .toggleStyle(.switch)
                     .labelsHidden()
+            }
+
+            if controller.playSound {
+                Divider().padding(.leading, 56)
+                SettingsRow(icon: "music.note", iconColor: .pink,
+                            title: "Alert sound") {
+                    Picker("", selection: $controller.alertSoundName) {
+                        ForEach(systemSounds, id: \.self) { name in
+                            Text(name).tag(name)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .labelsHidden()
+                    .frame(width: 130)
+                    .onChange(of: controller.alertSoundName) { _, name in
+                        NSSound(named: NSSound.Name(name))?.play()
+                    }
+                }
             }
 
             Divider().padding(.leading, 56)
@@ -533,6 +634,17 @@ struct PreferencesView: View {
                     .labelsHidden()
             }
 
+            if controller.showUpcomingEvents {
+                Divider().padding(.leading, 56)
+                SettingsRow(icon: "circle.fill", iconColor: .teal,
+                            title: "Calendar color dots",
+                            subtitle: "Match dot color to calendar") {
+                    Toggle("", isOn: $controller.showCalendarColors)
+                        .toggleStyle(.switch)
+                        .labelsHidden()
+                }
+            }
+
             Divider().padding(.leading, 56)
 
             SettingsRow(icon: "timer", iconColor: .blue,
@@ -541,6 +653,17 @@ struct PreferencesView: View {
                 Toggle("", isOn: $controller.showMenuBarCountdown)
                     .toggleStyle(.switch)
                     .labelsHidden()
+            }
+
+            if controller.showMenuBarCountdown {
+                Divider().padding(.leading, 56)
+                SettingsRow(icon: "text.quote", iconColor: .blue,
+                            title: "Show event title",
+                            subtitle: "Append meeting name to countdown") {
+                    Toggle("", isOn: $controller.showEventTitleInMenuBar)
+                        .toggleStyle(.switch)
+                        .labelsHidden()
+                }
             }
 
             Divider().padding(.leading, 56)

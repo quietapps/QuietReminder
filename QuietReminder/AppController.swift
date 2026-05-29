@@ -111,10 +111,60 @@ final class AppController: ObservableObject {
     @Published var selectedScreenName: String? {
         didSet { UserDefaults.standard.set(selectedScreenName, forKey: "selectedScreenName") }
     }
+    @Published var alertSoundName: String {
+        didSet { UserDefaults.standard.set(alertSoundName, forKey: "alertSoundName") }
+    }
+    @Published var showCalendarColors: Bool {
+        didSet { UserDefaults.standard.set(showCalendarColors, forKey: "showCalendarColors") }
+    }
+    @Published var bannerOpacity: Double {
+        didSet { UserDefaults.standard.set(bannerOpacity, forKey: "bannerOpacity") }
+    }
+    @Published var showEventTitleInMenuBar: Bool {
+        didSet { UserDefaults.standard.set(showEventTitleInMenuBar, forKey: "showEventTitleInMenuBar") }
+    }
+    @Published var useBannerCalendarColor: Bool {
+        didSet { UserDefaults.standard.set(useBannerCalendarColor, forKey: "useBannerCalendarColor") }
+    }
 
     static let slowSpeed:   Double = 22
     static let normalSpeed: Double = 14
     static let fastSpeed:   Double = 8
+    static let activeScreenSentinel = "__active__"
+
+    @Published var pausedUntil: Date? = nil
+    private var pauseTimer: Timer?
+
+    var isPaused: Bool {
+        guard let until = pausedUntil else { return false }
+        return Date() < until
+    }
+
+    var pauseStatusText: String? {
+        guard let until = pausedUntil, Date() < until else { return nil }
+        if until == .distantFuture { return "Paused" }
+        let mins = Int(until.timeIntervalSinceNow / 60)
+        if mins < 60 { return "Paused · \(mins)m left" }
+        return "Paused · \(mins / 60)h left"
+    }
+
+    func pause(until date: Date) {
+        pausedUntil = date
+        pauseTimer?.invalidate()
+        if date != .distantFuture {
+            let t = Timer(timeInterval: max(1, date.timeIntervalSinceNow), repeats: false) { [weak self] _ in
+                DispatchQueue.main.async { self?.resume() }
+            }
+            RunLoop.main.add(t, forMode: .common)
+            pauseTimer = t
+        }
+    }
+
+    func resume() {
+        pausedUntil = nil
+        pauseTimer?.invalidate()
+        pauseTimer = nil
+    }
 
     private let appleService = AppleCalendarService()
     private var poller: CalendarPoller?
@@ -157,6 +207,12 @@ final class AppController: ObservableObject {
         self.showUpcomingEvents     = (UserDefaults.standard.object(forKey: "showUpcomingEvents")     as? Bool) ?? true
         self.showOnAllScreens       = (UserDefaults.standard.object(forKey: "showOnAllScreens")       as? Bool) ?? true
         self.selectedScreenName     = UserDefaults.standard.string(forKey: "selectedScreenName")
+        self.alertSoundName         = UserDefaults.standard.string(forKey: "alertSoundName") ?? "Ping"
+        self.showCalendarColors     = (UserDefaults.standard.object(forKey: "showCalendarColors")     as? Bool) ?? true
+        let savedOpacity            = UserDefaults.standard.double(forKey: "bannerOpacity")
+        self.bannerOpacity          = savedOpacity > 0 ? savedOpacity : 1.0
+        self.showEventTitleInMenuBar  = (UserDefaults.standard.object(forKey: "showEventTitleInMenuBar")  as? Bool) ?? false
+        self.useBannerCalendarColor   = (UserDefaults.standard.object(forKey: "useBannerCalendarColor")   as? Bool) ?? false
 
         hasAppleAccess = appleService.hasAccess
         appleService.disabledCalendarIDs = self.disabledCalendarIDs
@@ -231,6 +287,7 @@ final class AppController: ObservableObject {
 
     // Stagger multiple simultaneous meetings 5 seconds apart.
     private func handleBatch(_ events: [(event: CalendarEvent, minutesUntil: Int)]) {
+        guard !isPaused else { return }
         for (index, item) in events.enumerated() {
             let delay = Double(index) * 5.0
             Task {
@@ -241,6 +298,7 @@ final class AppController: ObservableObject {
     }
 
     private func handleEndWarningBatch(_ events: [(event: CalendarEvent, minutesUntilEnd: Int)]) {
+        guard !isPaused else { return }
         for (index, item) in events.enumerated() {
             let delay = Double(index) * 5.0
             Task {
@@ -285,10 +343,18 @@ final class AppController: ObservableObject {
 
     var menuBarCountdownText: String? {
         guard showMenuBarCountdown, let min = nextMeetingMinutes else { return nil }
-        if min <= 0 { return "Now" }
-        if min < 60 { return "in \(min)m" }
-        let h = min / 60, m = min % 60
-        return m == 0 ? "in \(h)h" : "in \(h)h\(m)m"
+        let timeStr: String
+        if min <= 0 { timeStr = "Now" }
+        else if min < 60 { timeStr = "in \(min)m" }
+        else {
+            let h = min / 60, m = min % 60
+            timeStr = m == 0 ? "in \(h)h" : "in \(h)h\(m)m"
+        }
+        if showEventTitleInMenuBar, let title = nextMeetingTitle {
+            let truncated = title.count > 20 ? String(title.prefix(20)) + "…" : title
+            return "\(timeStr) · \(truncated)"
+        }
+        return timeStr
     }
 
     func refreshUpcomingEvents() {
@@ -301,16 +367,24 @@ final class AppController: ObservableObject {
     }
 
     private func showAirplaneNow(for event: CalendarEvent, minutesUntil: Int) {
-        let duration    = flightDuration
-        let eventID     = event.id
-        let yPos        = screenPositionPercent
-        let theme       = airplaneTheme
-        let snoozeLabel = snoozeMinutes > 0 ? "Snooze \(snoozeMinutes) min" : nil
-        let joinURL     = event.joinURL
+        let duration      = flightDuration
+        let eventID       = event.id
+        let yPos          = screenPositionPercent
+        let theme         = airplaneTheme
+        let opacity       = bannerOpacity
+        let calColor      = useBannerCalendarColor ? event.calendarColor : nil
+        let snoozeLabel   = snoozeMinutes > 0 ? "Snooze \(snoozeMinutes) min" : nil
+        let joinURL       = event.joinURL
 
         let screens: [NSScreen]
         if showOnAllScreens {
             screens = NSScreen.screens
+        } else if selectedScreenName == Self.activeScreenSentinel {
+            let mouseLoc = NSEvent.mouseLocation
+            let active = NSScreen.screens.first { $0.frame.contains(mouseLoc) }
+                      ?? NSScreen.main
+                      ?? NSScreen.screens[0]
+            screens = [active]
         } else if let name = selectedScreenName,
                   let match = NSScreen.screens.first(where: { $0.localizedName == name }) {
             screens = [match]
@@ -323,14 +397,16 @@ final class AppController: ObservableObject {
 
         for screen in screens {
             let window = AirplaneOverlayWindow(
-                screen:           screen,
-                meetingTitle:     event.title,
-                participants:     event.participants,
-                minutesUntil:     minutesUntil,
-                flightDuration:   duration,
-                theme:            theme,
-                yPositionPercent: yPos,
-                animController:   sharedAnim,
+                screen:              screen,
+                meetingTitle:        event.title,
+                participants:        event.participants,
+                minutesUntil:        minutesUntil,
+                flightDuration:      duration,
+                theme:               theme,
+                yPositionPercent:    yPos,
+                bannerOpacity:       opacity,
+                calendarColor:       calColor,
+                animController:      sharedAnim,
                 onSnooze:         { [weak self] in
                     self?.snooze(eventID: eventID)
                     self?.closeWindows(for: eventID)
@@ -342,13 +418,14 @@ final class AppController: ObservableObject {
             overlayWindows.append((eventID: eventID, window: window))
         }
 
-        sharedAnim.start()
-        if playSound { NSSound(named: NSSound.Name("Ping"))?.play() }
-
-        Task {
-            try? await Task.sleep(for: .seconds(duration + 1.5))
-            closeWindows(for: eventID)
+        sharedAnim.onComplete = { [weak self] in
+            Task { @MainActor [weak self] in
+                try? await Task.sleep(for: .seconds(1.5))
+                self?.closeWindows(for: eventID)
+            }
         }
+        sharedAnim.start()
+        if playSound { NSSound(named: NSSound.Name(alertSoundName))?.play() }
     }
 
     private func closeWindows(for eventID: String) {

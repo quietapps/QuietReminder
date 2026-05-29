@@ -4,6 +4,26 @@ All notable changes to **Quiet Reminder** are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4] — 2026-05-29
+
+**Build 5** · Pause mode, calendar-color theming, display polish, and menu bar improvements.
+
+### Added
+
+- **Pause notifications** — new "Pause notifications" menu in the menu bar popover lets you suppress all flyovers for: 5, 10, 15, or 30 minutes; 1 hour; the rest of today; or indefinitely. Auto-resumes when the duration expires. While paused, the menu bar shows a pause icon instead of the countdown, and an orange status banner in the popover shows remaining time with a "Resume" button.
+- **Calendar-color banner** — new toggle in Display → Banner: when on, the airplane banner is tinted to match the calendar color of the event (desaturates the banner image and multiplies by the calendar color). Text color adjusts automatically via luminance — dark text on light calendars, white text on dark ones.
+- **Calendar color dots** — upcoming events list in the menu bar popover now shows colored dots matching each event's calendar color. Toggle in General → Upcoming events. On by default.
+- **Custom alert sound** — sound picker replaces the plain on/off toggle. Choose from all 14 macOS system sounds (Basso, Blow, Bottle, Frog, Funk, Glass, Hero, Morse, Ping, Pop, Purr, Sosumi, Submarine, Tink). Previews the selected sound immediately on change.
+- **Banner opacity** — new slider in Display (30–100%) controls the transparency of the banner. The airplane vehicle stays fully opaque.
+- **Event title in menu bar** — new toggle in General: when "Menu bar countdown" and "Show event title" are both on, the menu bar label appends the meeting name to the countdown (e.g. `in 4m · Standup`, truncated at 20 characters).
+- **Active Screen** — new option in Display → Screens. When selected, the banner appears on whichever screen the cursor is on at the time the alert fires. Falls back to the main screen if the cursor position can't be resolved.
+
+### Changed
+
+- **Screen selector** — "Active Screen" option added at the top of the per-screen list when "Show on all screens" is off; per-screen rows now have dividers between them.
+
+---
+
 ## [1.3] — 2026-05-29
 
 **Build 2** · Menu bar icon refresh and smarter meeting join-link detection.

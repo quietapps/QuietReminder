@@ -47,7 +47,8 @@ final class AppleCalendarService: CalendarSourceProvider {
                 endDate:            e.endDate,
                 hasOtherAttendees:  hasOthers,
                 participants:       participantString(for: e),
-                joinURL:            extractMeetingURL(from: e)
+                joinURL:            extractMeetingURL(from: e),
+                calendarColor:      e.calendar.color
             )
         }
     }
@@ -120,7 +121,8 @@ final class AppleCalendarService: CalendarSourceProvider {
                     endDate: e.endDate,
                     hasOtherAttendees: (e.attendees ?? []).contains { !$0.isCurrentUser },
                     participants: nil,
-                    joinURL: nil
+                    joinURL: nil,
+                    calendarColor: e.calendar.color
                 )
             }
     }

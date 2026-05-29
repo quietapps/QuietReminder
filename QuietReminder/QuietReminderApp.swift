@@ -13,7 +13,10 @@ struct QuietReminderApp: App {
             HStack(spacing: 3) {
                 Image("menubar")
                     .renderingMode(.template)
-                if let txt = controller.menuBarCountdownText {
+                if controller.isPaused {
+                    Image(systemName: "pause.fill")
+                        .font(.system(size: 9, weight: .bold))
+                } else if let txt = controller.menuBarCountdownText {
                     Text(txt)
                         .font(.system(size: 11, weight: .semibold, design: .rounded))
                 }

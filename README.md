@@ -37,16 +37,22 @@ Works with any calendar you've connected to Calendar.app — iCloud, Google, Exc
 - **Flying banner** — borderless transparent panel above every window, including fullscreen apps; banner shows meeting title and attendee names on two lines
 - **Reads all your calendars** — EventKit reads directly from Calendar.app; any account (iCloud, Google, Exchange) connected there is automatically included
 - **Per-calendar filter** — toggle individual calendars on or off in Preferences; changes take effect immediately, no restart needed
-- **Configurable lead time** — alert 0, 2, 5, 10, or 15 minutes before each event; "On time" shows a "NOW" banner at the moment the meeting starts
-- **Early warning** — optional second flyover at a higher threshold (10–30 min) before the main alert
-- **Multi-screen** — one airplane panel per connected display; all monitors get the alert simultaneously
-- **Snooze** — click the airplane mid-flight to snooze; re-alerts after a configurable duration (2, 5, or 10 minutes)
+- **Configurable lead time** — add multiple alert thresholds (0, 1, 2, 3, 5, 10, 15, 20, 30, 45, 60 min); fire as many simultaneous flyovers as you like
+- **Meeting end warning** — optional second flyover near the end of a meeting (1, 2, 3, 5, or 10 minutes before it ends)
+- **Multi-screen** — choose All Screens, a specific named display, or **Active Screen** (whichever display your cursor is on when the alert fires)
+- **Snooze** — click the airplane mid-flight to snooze; re-alerts after a configurable duration (2, 5, or 10 minutes); or set to "Off" to dismiss forever
+- **Pause notifications** — suppress all flyovers for 5 / 10 / 15 / 30 minutes, 1 hour, the rest of today, or indefinitely; auto-resumes when the duration expires; pause icon shown in the menu bar while active
 - **Skip solo events** — optionally suppress alerts for events with no other attendees (personal blocks, reminders)
-- **Meeting join links** — detects Teams, Zoom, Google Meet, Webex, and more; decodes Microsoft SafeLinks and Mimecast protection wrappers automatically
-- **Airplane themes** — five color presets (Classic, Sky, Forest, Sunset, Lavender) applied via hue rotation; no extra artwork needed
-- **Configurable screen position** — slider controls vertical position of the airplane strip (top to bottom)
+- **Quiet hours** — configure a time window during which no alerts fire (e.g. 10 PM – 8 AM)
+- **Meeting join links** — detects Teams, Zoom, Google Meet, Webex, and more; decodes Microsoft SafeLinks and Mimecast protection wrappers automatically; click the airplane or a "Join ↗" button to open the link
+- **Calendar-color banner** — optionally tint the banner to match the event's calendar color so you can instantly identify which calendar triggered the alert; text color adjusts automatically for legibility
+- **Airplane themes** — eight presets (Classic, Sky, Sunset, Rocket, UFO, Paper, Pigeon, Dragonfly); picker in Display tab shows live previews
+- **Banner opacity** — slider (30–100%) to fade the banner without affecting the airplane
+- **Configurable screen position** — slider controls the vertical position of the airplane strip (10%–90% from bottom)
 - **Speed picker** — Slow / Normal / Fast flight duration
-- **Sound** — plays system Ping sound on each alert; toggleable
+- **Custom alert sound** — choose from all 14 macOS system sounds (Basso, Blow, Bottle, Frog, Funk, Glass, Hero, Morse, Ping, Pop, Purr, Sosumi, Submarine, Tink); previews on selection
+- **Upcoming events** — menu bar popover lists the next 3 events for today with calendar-color dots; toggleable
+- **Menu bar countdown** — shows time to next meeting in the menu bar (e.g. `in 4m`); optionally appends the event title (e.g. `in 4m · Standup`)
 - **Launch at login** — registers with `SMAppService`; toggle in Preferences
 - **Test mode** — trigger the animation on demand from the menu bar
 - **Menu bar agent** — no Dock icon, no app switcher entry
@@ -66,7 +72,7 @@ The cask strips the macOS quarantine attribute on install so Gatekeeper does not
 
 ### Direct download
 
-1. Grab `QuietReminder-1.3.zip` from the [latest release](https://github.com/quietapps/QuietReminder/releases/latest)
+1. Grab `QuietReminder-1.4.zip` from the [latest release](https://github.com/quietapps/QuietReminder/releases/latest)
 2. Unzip → drag **Quiet Reminder.app** into `/Applications`
 3. Strip the quarantine attribute (or right-click → Open once):
 
@@ -162,10 +168,14 @@ rm -rf ~/Library/Preferences/app.quiet.QuietReminder.plist \
 |---|---|
 | Grant calendar access | Click ✈️ → **Grant Calendar access** → Allow |
 | Open Preferences | Click ✈️ → **Preferences…** |
-| Change alert lead time | Preferences → Alerts tab |
+| Change alert timing | Preferences → Alerts tab |
 | Filter calendars | Preferences → Calendars tab |
-| Change theme or position | Preferences → Display tab |
+| Change theme, position, or opacity | Preferences → Display tab |
+| Change sound | Preferences → General tab → Alert sound |
 | Snooze an alert | Click the airplane mid-flight |
+| Join a meeting | Click the airplane (or hover → **Join ↗**) |
+| Pause all notifications | Click ✈️ → **Pause notifications** → choose duration |
+| Resume notifications | Click ✈️ → **Resume notifications** (or open popover → Resume) |
 | Test the animation | Click ✈️ → **Test airplane** |
 | Quit | Click ✈️ → **Quit** |
 
@@ -256,6 +266,12 @@ Yes — EventKit reads every calendar in Calendar.app. Toggle individual calenda
 
 **How do I snooze?**
 Click the airplane while it's flying. It re-alerts after the snooze duration configured in Preferences → Alerts.
+
+**How do I pause all alerts temporarily?**
+Click ✈️ → **Pause notifications** and pick a duration. The menu bar icon shows a pause symbol while active. Click **Resume notifications** (or the Resume button in the popover) to cancel early.
+
+**How do I color the banner by calendar?**
+Preferences → Display → Banner → **Calendar color banner**. The banner tints to match the calendar color of the event. Turn off to use the theme color instead.
 
 **How do I quit?**
 Click ✈️ → **Quit**.

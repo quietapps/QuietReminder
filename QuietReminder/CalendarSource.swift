@@ -10,6 +10,7 @@ struct CalendarEvent: Identifiable {
     let hasOtherAttendees: Bool
     let participants: String?
     var joinURL: URL? = nil
+    var calendarColor: NSColor? = nil
 }
 
 struct CalendarInfo: Identifiable {
